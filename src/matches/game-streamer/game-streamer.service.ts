@@ -19,6 +19,7 @@ import { GameStreamerStatusDto } from "./types/GameStreamerStatusDto";
 import { AppConfig } from "../../configs/types/AppConfig";
 import { SteamConfig } from "../../configs/types/SteamConfig";
 import { resolveInClusterApiBase } from "../clips/clips.constants";
+import { imagePullPolicyFor } from "src/utilities/imagePullPolicyFor";
 import {
   BroadcastHud,
   BroadcastHudsService,
@@ -3618,8 +3619,14 @@ export class GameStreamerService {
                 name: containerName,
                 // Override via GAME_STREAMER_IMAGE (see configs/game-servers.ts).
                 image: this.gameServerConfig.gameStreamerImage,
-                // Mutable tag; force each pod start to resolve the latest digest.
-                imagePullPolicy: "Always",
+                // Same rule the match server pods use. A channel tag (latest,
+                // dev) moves, so it still re-resolves the digest on every pod
+                // start; a pinned `:v…` does not, which is also what lets an
+                // image built and imported straight onto the node be used
+                // without a registry to pull it from.
+                imagePullPolicy: imagePullPolicyFor(
+                  this.gameServerConfig.gameStreamerImage,
+                ),
                 securityContext: { privileged: true },
                 args,
                 ports: exposesSpecPorts

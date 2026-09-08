@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { imagePullPolicyFor } from "src/utilities/imagePullPolicyFor";
 import { HasuraService } from "../../hasura/hasura.service";
 import { PluginRuntimeService } from "src/plugin-runtime/plugin-runtime.service";
 import { GameModesService } from "src/game-plugins/game-modes.service";
@@ -699,10 +700,11 @@ export class MatchAssistantService {
   // Always would put a registry round-trip in front of every match boot for
   // nothing, and a registry that is rate limiting or down would stop matches
   // that could otherwise have started from the node's disk.
+  // Moved to utilities/imagePullPolicyFor so the game-streamer pod spec can
+  // apply the same rule without importing this service. Kept as a static here
+  // because the call sites and its test both name it this way.
   public static imagePullPolicyFor(image: string): "Always" | "IfNotPresent" {
-    const tag = image.slice(image.lastIndexOf("/") + 1).split(":")[1] ?? "";
-
-    return /^v\d/.test(tag) ? "IfNotPresent" : "Always";
+    return imagePullPolicyFor(image);
   }
 
   private static getGameMode(type?: e_match_types_enum): number {
