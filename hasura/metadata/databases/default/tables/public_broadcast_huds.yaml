@@ -2,14 +2,17 @@ table:
   name: broadcast_huds
   schema: public
 select_permissions:
-  # Everyone reads the enabled library. The HUD pickers in the demo player and
-  # the stream deck are not administrator-only surfaces, and a row carries
-  # nothing sensitive -- a name, a layout id and a thumbnail. storage_key is
-  # withheld from every role below administrator so the object key is not a
-  # thing anyone but the import flow ever handles.
+  # Defined on guest only: every other role inherits it up the chain in
+  # inherited_roles.yaml, and an explicit block overrides rather than merges --
+  # so repeating this per role is how the copies drift apart.
+  #
+  # The HUD pickers in the demo player and the stream deck are not
+  # administrator-only surfaces, and a row carries nothing sensitive: a name, a
+  # layout id, a thumbnail. storage_key is withheld below administrator so the
+  # object key is only ever handled by the import flow.
   - role: guest
     permission:
-      columns: &public_columns
+      columns:
         - id
         - slug
         - jthud_id
@@ -28,50 +31,9 @@ select_permissions:
         enabled:
           _eq: true
     comment: ""
-  - role: user
-    permission:
-      columns: *public_columns
-      filter:
-        enabled:
-          _eq: true
-    comment: ""
-  - role: verified_user
-    permission:
-      columns: *public_columns
-      filter:
-        enabled:
-          _eq: true
-    comment: ""
-  - role: streamer
-    permission:
-      columns: *public_columns
-      filter:
-        enabled:
-          _eq: true
-    comment: ""
-  - role: moderator
-    permission:
-      columns: *public_columns
-      filter:
-        enabled:
-          _eq: true
-    comment: ""
-  - role: match_organizer
-    permission:
-      columns: *public_columns
-      filter:
-        enabled:
-          _eq: true
-    comment: ""
-  - role: tournament_organizer
-    permission:
-      columns: *public_columns
-      filter:
-        enabled:
-          _eq: true
-    comment: ""
   # Administrators see disabled rows too -- the settings page has to list what
-  # it is about to re-enable.
+  # it is about to re-enable -- and the storage/manifest columns the importer
+  # writes.
   - role: administrator
     permission:
       columns:
@@ -96,10 +58,10 @@ select_permissions:
       filter: {}
     comment: ""
 update_permissions:
-  # Enable/disable and rename only. Everything that describes the archive
-  # (slug, jthud_id, storage_key, hud_json, is_signed) is written once by the
-  # import flow from the bytes themselves -- letting it be edited afterwards
-  # would let a row stop describing the zip it points at.
+  # Enable/disable and rename only. Everything describing the archive (slug,
+  # jthud_id, storage_key, hud_json, is_signed) is written once by the import
+  # flow from the bytes themselves; letting it be edited afterwards would let a
+  # row stop describing the zip it points at.
   - role: administrator
     permission:
       columns:
